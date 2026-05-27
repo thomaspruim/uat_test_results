@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UAT Recombee Results Viewer</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <h1>UAT Recombee Results</h1>
+      <p class="subtitle">Recommended categories and stories from the UAT spreadsheet</p>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="controls card" aria-label="Filters">
+      <div class="control-row">
+        <label for="userSelect">User</label>
+        <select id="userSelect">
+          <option value="">All users</option>
+        </select>
+      </div>
+      <div class="control-row">
+        <label for="testSelect">Test</label>
+        <select id="testSelect">
+          <option value="">All tests</option>
+        </select>
+      </div>
+      <div class="control-row">
+        <label for="sortSelect">Sort by</label>
+        <select id="sortSelect">
+          <option value="user-asc">User name (A–Z)</option>
+          <option value="user-desc">User name (Z–A)</option>
+          <option value="test-asc">Test number (low–high)</option>
+          <option value="test-desc">Test number (high–low)</option>
+          <option value="id-asc">User ID (A–Z)</option>
+        </select>
+      </div>
+      <div class="control-actions">
+        <button type="button" id="expandAllBtn" class="btn-secondary">Expand all</button>
+        <button type="button" id="collapseAllBtn" class="btn-secondary">Collapse all</button>
+        <button type="button" id="refreshBtn" class="btn-secondary">Refresh data</button>
+      </div>
+    </section>
+
+    <div id="status" class="status" role="status"></div>
+    <div id="results" class="results"></div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
