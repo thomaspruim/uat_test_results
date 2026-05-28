@@ -212,6 +212,19 @@ select:focus {
   border-radius: 999px;
 }
 
+.scenario-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--bg);
+  color: var(--accent);
+  border: 1px solid var(--accent-dim);
+  border-radius: 999px;
+  font-family: var(--mono);
+}
+
 .meta {
   font-size: 0.85rem;
   color: var(--text-muted);

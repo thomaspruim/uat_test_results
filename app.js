@@ -13,11 +13,14 @@ const statusEl = document.getElementById("status");
 const resultsEl = document.getElementById("results");
 
 let allGroups = [];
+let scenariosFromColumn = [];
 const expandedTests = new Set();
 const expandedCategories = new Set();
 
+const SCENARIO_COLUMN = 2;
+
 function testSectionKey(group) {
-  return `${group.userId}|${group.test}`;
+  return `${group.userId}|${group.test}|${group.scenario || ""}`;
 }
 
 function categorySectionKey(group, cat) {
@@ -127,6 +130,29 @@ function parseResults(rows) {
   return groups;
 }
 
+function extractScenariosFromRows(rows) {
+  const scenarios = new Set();
+  for (const row of rows) {
+    const value = String(row[SCENARIO_COLUMN] || "").trim();
+    if (value) scenarios.add(value);
+  }
+  return [...scenarios].sort((a, b) => a.localeCompare(b));
+}
+
+function getScenariosForFilters(userFilter, testFilter) {
+  if (!userFilter && !testFilter) {
+    return scenariosFromColumn;
+  }
+
+  let matching = allGroups;
+  if (userFilter) matching = matching.filter((g) => g.userId === userFilter);
+  if (testFilter) matching = matching.filter((g) => String(g.test) === testFilter);
+
+  return [...new Set(matching.map((g) => g.scenario).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b)
+  );
+}
+
 function sortGroups(groups, mode) {
   const sorted = [...groups];
   const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
@@ -155,16 +181,12 @@ function sortGroups(groups, mode) {
 function populateFilters(groups) {
   const prevUser = userSelect.value;
   const prevTest = testSelect.value;
-  const prevScenario = scenarioSelect.value;
 
   const users = [...new Map(groups.map((g) => [g.userId, g])).values()].sort((a, b) =>
     a.name.localeCompare(b.name)
   );
   const tests = [...new Set(groups.map((g) => g.test).filter((t) => t != null))].sort(
     (a, b) => a - b
-  );
-  const scenarios = [...new Set(groups.map((g) => g.scenario).filter(Boolean))].sort((a, b) =>
-    a.localeCompare(b)
   );
 
   userSelect.innerHTML = '<option value="">All users</option>';
@@ -183,6 +205,16 @@ function populateFilters(groups) {
     testSelect.appendChild(opt);
   }
 
+  if ([...userSelect.options].some((o) => o.value === prevUser)) userSelect.value = prevUser;
+  if ([...testSelect.options].some((o) => o.value === prevTest)) testSelect.value = prevTest;
+
+  updateScenarioDropdown();
+}
+
+function updateScenarioDropdown() {
+  const prevScenario = scenarioSelect.value;
+  const scenarios = getScenariosForFilters(userSelect.value, testSelect.value);
+
   scenarioSelect.innerHTML = '<option value="">All scenarios</option>';
   for (const s of scenarios) {
     const opt = document.createElement("option");
@@ -191,10 +223,10 @@ function populateFilters(groups) {
     scenarioSelect.appendChild(opt);
   }
 
-  if ([...userSelect.options].some((o) => o.value === prevUser)) userSelect.value = prevUser;
-  if ([...testSelect.options].some((o) => o.value === prevTest)) testSelect.value = prevTest;
   if ([...scenarioSelect.options].some((o) => o.value === prevScenario)) {
     scenarioSelect.value = prevScenario;
+  } else {
+    scenarioSelect.value = "";
   }
 }
 
@@ -277,6 +309,7 @@ function render() {
             <span class="collapse-chevron" aria-hidden="true"></span>
             <h2>${escapeHtml(group.name)}</h2>
             <span class="test-badge">Test ${group.test ?? "—"}</span>
+            ${group.scenario ? `<span class="scenario-badge">${escapeHtml(group.scenario)}</span>` : ""}
             <span class="section-count">${group.categories.length} categor${group.categories.length === 1 ? "y" : "ies"}</span>
           </summary>
           <div class="test-block-body">
@@ -329,6 +362,7 @@ async function loadData() {
     ]);
 
     const rows = rowsFromTable(resultsData.table);
+    scenariosFromColumn = extractScenariosFromRows(rows);
     allGroups = parseResults(rows);
 
     if (usersData) {
@@ -364,9 +398,16 @@ function enrichFromUsersSheet(groups, userRows) {
   }
 }
 
-[userSelect, testSelect, scenarioSelect, sortSelect].forEach((el) => {
-  el.addEventListener("change", render);
+userSelect.addEventListener("change", () => {
+  updateScenarioDropdown();
+  render();
 });
+testSelect.addEventListener("change", () => {
+  updateScenarioDropdown();
+  render();
+});
+scenarioSelect.addEventListener("change", render);
+sortSelect.addEventListener("change", render);
 
 refreshBtn.addEventListener("click", loadData);
 expandAllBtn.addEventListener("click", () => setAllSectionsOpen(true));
