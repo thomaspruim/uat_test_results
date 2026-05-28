@@ -4,6 +4,7 @@ const USERS_SHEET = "Users";
 
 const userSelect = document.getElementById("userSelect");
 const testSelect = document.getElementById("testSelect");
+const scenarioSelect = document.getElementById("scenarioSelect");
 const sortSelect = document.getElementById("sortSelect");
 const refreshBtn = document.getElementById("refreshBtn");
 const expandAllBtn = document.getElementById("expandAllBtn");
@@ -154,12 +155,16 @@ function sortGroups(groups, mode) {
 function populateFilters(groups) {
   const prevUser = userSelect.value;
   const prevTest = testSelect.value;
+  const prevScenario = scenarioSelect.value;
 
   const users = [...new Map(groups.map((g) => [g.userId, g])).values()].sort((a, b) =>
     a.name.localeCompare(b.name)
   );
   const tests = [...new Set(groups.map((g) => g.test).filter((t) => t != null))].sort(
     (a, b) => a - b
+  );
+  const scenarios = [...new Set(groups.map((g) => g.scenario).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b)
   );
 
   userSelect.innerHTML = '<option value="">All users</option>';
@@ -178,8 +183,19 @@ function populateFilters(groups) {
     testSelect.appendChild(opt);
   }
 
+  scenarioSelect.innerHTML = '<option value="">All scenarios</option>';
+  for (const s of scenarios) {
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = s;
+    scenarioSelect.appendChild(opt);
+  }
+
   if ([...userSelect.options].some((o) => o.value === prevUser)) userSelect.value = prevUser;
   if ([...testSelect.options].some((o) => o.value === prevTest)) testSelect.value = prevTest;
+  if ([...scenarioSelect.options].some((o) => o.value === prevScenario)) {
+    scenarioSelect.value = prevScenario;
+  }
 }
 
 function truncateId(id) {
@@ -198,11 +214,13 @@ function escapeHtml(str) {
 function render() {
   const userFilter = userSelect.value;
   const testFilter = testSelect.value;
+  const scenarioFilter = scenarioSelect.value;
   const sortMode = sortSelect.value;
 
   let filtered = allGroups;
   if (userFilter) filtered = filtered.filter((g) => g.userId === userFilter);
   if (testFilter) filtered = filtered.filter((g) => String(g.test) === testFilter);
+  if (scenarioFilter) filtered = filtered.filter((g) => g.scenario === scenarioFilter);
 
   filtered = sortGroups(filtered, sortMode);
 
@@ -210,7 +228,7 @@ function render() {
     resultsEl.innerHTML = `
       <div class="empty-state card">
         <strong>No results match your filters</strong>
-        <p>Try selecting a different user or test, or refresh the data.</p>
+        <p>Try selecting a different user, test, or scenario, or refresh the data.</p>
       </div>`;
     return;
   }
@@ -346,7 +364,7 @@ function enrichFromUsersSheet(groups, userRows) {
   }
 }
 
-[userSelect, testSelect, sortSelect].forEach((el) => {
+[userSelect, testSelect, scenarioSelect, sortSelect].forEach((el) => {
   el.addEventListener("change", render);
 });
 
