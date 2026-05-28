@@ -158,6 +158,8 @@ function sortGroups(groups, mode) {
   const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
   const byTest = (a, b) => a.test - b.test;
   const byId = (a, b) => a.userId.localeCompare(b.userId);
+  const byScenario = (a, b) =>
+    (a.scenario || "").localeCompare(b.scenario || "", undefined, { sensitivity: "base" });
 
   switch (mode) {
     case "user-desc":
@@ -168,6 +170,12 @@ function sortGroups(groups, mode) {
       break;
     case "test-desc":
       sorted.sort((a, b) => byTest(b, a) || byName(a, b));
+      break;
+    case "scenario-asc":
+      sorted.sort((a, b) => byScenario(a, b) || byName(a, b) || byTest(a, b));
+      break;
+    case "scenario-desc":
+      sorted.sort((a, b) => byScenario(b, a) || byName(a, b) || byTest(a, b));
       break;
     case "id-asc":
       sorted.sort((a, b) => byId(a, b) || byTest(a, b));
