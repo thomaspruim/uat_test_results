@@ -312,16 +312,64 @@ details[open] > summary .collapse-chevron {
   word-break: break-all;
 }
 
-.stories {
-  list-style: none;
-  margin: 0;
+.stories-table {
   padding: 0.5rem 0;
 }
 
+.stories-header {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  gap: 0.5rem 1rem;
+  padding: 0.35rem 1.1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.stories-header-rank {
+  text-align: center;
+}
+
+.stories-header-date {
+  text-align: right;
+  min-width: 6.5rem;
+}
+
+.stories {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: story;
+}
+
 .stories li {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
   padding: 0.65rem 1.1rem;
   border-bottom: 1px solid var(--border);
   font-size: 0.92rem;
+}
+
+.story-title {
+  min-width: 0;
+}
+
+.story-date {
+  text-align: right;
+  min-width: 6.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.story-date-empty {
+  opacity: 0.45;
 }
 
 .stories li:last-child {
@@ -331,16 +379,10 @@ details[open] > summary .collapse-chevron {
 .stories li::before {
   content: counter(story);
   counter-increment: story;
-  display: inline-block;
-  min-width: 1.5rem;
-  margin-right: 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--accent);
-}
-
-.stories {
-  counter-reset: story;
+  text-align: center;
 }
 
 .category-note {

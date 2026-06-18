@@ -18,6 +18,14 @@ const expandedTests = new Set();
 const expandedCategories = new Set();
 
 const SCENARIO_COLUMN = 2;
+const NOTES_COLUMN = 15;
+const STORY_COLUMNS = [
+  { title: 5, date: 6 },
+  { title: 7, date: 8 },
+  { title: 9, date: 10 },
+  { title: 11, date: 12 },
+  { title: 13, date: 14 },
+];
 
 function testSectionKey(group) {
   return `${group.userId}|${group.test}|${group.scenario || ""}`;
@@ -55,6 +63,51 @@ function rowsFromTable(table) {
   return table.rows.map((row) => row.c.map(cellValue));
 }
 
+function storyTitleValue(cell) {
+  if (!cell) return "";
+  if (cell.v != null && cell.v !== "") return String(cell.v).trim();
+  if (cell.f) return String(cell.f).trim();
+  return "";
+}
+
+function parseGoogleDateValue(value) {
+  if (value instanceof Date) return value;
+  if (typeof value === "number") {
+    return new Date(Math.round((value - 25569) * 86400000));
+  }
+  const match = String(value).match(/^Date\((\d+),(\d+),(\d+)\)$/);
+  if (match) {
+    return new Date(Number(match[1]), Number(match[2]), Number(match[3]));
+  }
+  return null;
+}
+
+function storyDateValue(cell) {
+  if (!cell) return "";
+  const parsed = parseGoogleDateValue(cell.v);
+  if (parsed && !Number.isNaN(parsed.getTime())) return formatDateDisplay(parsed);
+  if (cell.f) return String(cell.f).trim();
+  if (cell.v != null && cell.v !== "") return String(cell.v).trim();
+  return "";
+}
+
+function formatDateDisplay(date) {
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function parseStoriesFromRow(row) {
+  const cells = row.c || [];
+  return STORY_COLUMNS.map(({ title, date }) => ({
+    title: storyTitleValue(cells[title]),
+    date: storyDateValue(cells[date]),
+  })).filter((story) => story.title);
+}
+
 function parseCategory(raw) {
   const text = String(raw || "").trim();
   if (!text) return { path: "", label: "" };
@@ -73,7 +126,8 @@ function isHeaderRow(row) {
   return hasName || (hasScenario && hasTest);
 }
 
-function parseResults(rows) {
+function parseResults(table) {
+  const rows = table.rows;
   const groups = [];
   let name = "";
   let userId = "";
@@ -86,12 +140,16 @@ function parseResults(rows) {
     current = null;
   };
 
+  const rowValues = (row) => row.c.map(cellValue);
+
   for (const row of rows) {
-    if (isHeaderRow(row)) {
-      if (String(row[0] || "").trim()) name = String(row[0]).trim();
-      if (String(row[2] || "").trim()) scenario = String(row[2]).trim();
-      if (row[3] !== "" && row[3] != null) test = Number(row[3]);
-      if (String(row[1] || "").trim()) userId = String(row[1]).trim();
+    const values = rowValues(row);
+
+    if (isHeaderRow(values)) {
+      if (String(values[0] || "").trim()) name = String(values[0]).trim();
+      if (String(values[2] || "").trim()) scenario = String(values[2]).trim();
+      if (values[3] !== "" && values[3] != null) test = Number(values[3]);
+      if (String(values[1] || "").trim()) userId = String(values[1]).trim();
 
       flush();
       current = {
@@ -103,18 +161,15 @@ function parseResults(rows) {
       };
     }
 
-    const categoryRaw = String(row[4] || "").trim();
+    const categoryRaw = String(values[4] || "").trim();
     if (!categoryRaw) continue;
 
     if (!current) {
       current = { name, userId, scenario, test, categories: [] };
     }
 
-    const stories = [row[5], row[6], row[7], row[8], row[9]]
-      .map((s) => String(s || "").trim())
-      .filter(Boolean);
-
-    const notes = String(row[10] || "").trim();
+    const stories = parseStoriesFromRow(row);
+    const notes = String(values[NOTES_COLUMN] || "").trim();
     const { path, label } = parseCategory(categoryRaw);
 
     current.categories.push({
@@ -287,7 +342,24 @@ function render() {
           const catOpen = expandedCategories.has(catKey);
           const storiesHtml =
             cat.stories.length > 0
-              ? `<ol class="stories">${cat.stories.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>`
+              ? `<div class="stories-table">
+                  <div class="stories-header">
+                    <span class="stories-header-rank" aria-hidden="true">#</span>
+                    <span class="stories-header-title">Story</span>
+                    <span class="stories-header-date">Published</span>
+                  </div>
+                  <ol class="stories">${cat.stories
+                    .map((story) => {
+                      const dateHtml = story.date
+                        ? `<time class="story-date">${escapeHtml(story.date)}</time>`
+                        : `<span class="story-date story-date-empty">—</span>`;
+                      return `<li class="story-item">
+                        <span class="story-title">${escapeHtml(story.title)}</span>
+                        ${dateHtml}
+                      </li>`;
+                    })
+                    .join("")}</ol>
+                </div>`
               : `<p class="category-note">No stories listed</p>`;
           const noteHtml = cat.notes
             ? `<p class="category-note">Note: ${escapeHtml(cat.notes)}</p>`
@@ -371,7 +443,7 @@ async function loadData() {
 
     const rows = rowsFromTable(resultsData.table);
     scenariosFromColumn = extractScenariosFromRows(rows);
-    allGroups = parseResults(rows);
+    allGroups = parseResults(resultsData.table);
 
     if (usersData) {
       const userRows = rowsFromTable(usersData.table);
